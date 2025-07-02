@@ -5,29 +5,20 @@
     {
       "clientId": "portainer",
       "name": "Portainer",
+      "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "REPLACE_ME",
+      "secret": "changeme",
       "redirectUris": [
-        "https://auth-proxy.homelab.local/oauth2/callback"
+        "https://*"
       ],
-      "webOrigins": [
-        "*"
-      ],
-      "standardFlowEnabled": true,
-      "directAccessGrantsEnabled": false,
-      "serviceAccountsEnabled": false,
-      "authorizationServicesEnabled": false
+      "standardFlowEnabled": true
     }
   ],
   "users": [
     {
       "username": "admin",
       "enabled": true,
-      "emailVerified": true,
-      "firstName": "Admin",
-      "lastName": "Homelab",
-      "email": "admin@homelab.local",
       "credentials": [
         {
           "type": "password",
