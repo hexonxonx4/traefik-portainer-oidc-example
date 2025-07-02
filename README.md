@@ -32,6 +32,65 @@ Permissions requises :
 - Zone.Zone: Read
 - Zone.DNS: Edit
 
+### ✅ Création d'un réseau Docker partagé (utilisé par tous les services y faisant référence pour communiquer entre eux en toute sécurité via Traefik)
+
+```bash
+docker network create traefik-net
+```
+
+---
+
+## 🧠 Option avancée : déploiement **LAN seulement** avec TLS valide
+
+Tu peux sécuriser entièrement cette stack **sans exposer aucun port (80/443) sur Internet**, tout en conservant des certificats TLS valides de Let's Encrypt. Pour ce faire, on exploite la capacité du DNS challenge à vérifier la propriété du domaine **sans accès HTTP public**.
+
+![Schéma - TLS LAN + ACME DNS Challenge](acme_lan_seulement.png)
+
+### ✅ Conditions requises
+
+1. **Utilisation d’un DNS provider supportant les challenges DNS** (comme Cloudflare)
+2. **Résolution DNS locale des sous-domaines**, par :
+
+   - `/etc/hosts` :
+     ```plaintext
+     192.168.1.100 keycloak.local.example.com portainer.local.example.com auth-proxy.local.example.com
+     ```
+   - ou ton routeur/DNS local (Pi-hole, Unbound, etc.)
+
+3. **Utilisation d’un sous-domaine réservé à l’usage interne**, comme `local.example.com`
+
+   > 💡 En générant un certificat wildcard (`*.local.example.com`), tu peux sécuriser plusieurs services internes tout en isolant leur usage LAN. Cela t'évite de polluer le domaine principal.
+
+### ✅ Avantages
+
+- Pas besoin de rendre ton réseau accessible depuis Internet
+- Certificats TLS toujours valides via ACME (Let’s Encrypt)
+- Navigation sécurisée (https) avec des FQDN professionnels
+- Authentification centralisée avec Keycloak
+
+---
+
+> 💡 Cette approche est idéale pour les environnements de test, homelabs sécurisés, ou tout déploiement sensible qui ne nécessite pas d’accès public.
+
+---
+
+### 📝 Fichier `.env`
+
+Voici les variables essentielles à définir dans un fichier `.env` :
+
+- `DOMAIN` → domaine utilisé pour générer un certificat wildcard ACME.  
+  ⚠️ Il est **fortement recommandé d'utiliser un sous-domaine dédié à l’usage LAN**, par exemple : `local.example.com`.
+
+- `PORTAINER_HOSTNAME`, `OAUTH2_PROXY_HOSTNAME` → préfixes utilisés pour générer les FQDN (`portainer.local.example.com`, etc.)
+
+- `CLOUDFLARE_EMAIL`, `CLOUDFLARE_API_TOKEN` → identifiants de ton compte Cloudflare (avec accès DNS API)
+
+- `KEYCLOAK_ADMIN_PASSWORD` → mot de passe admin Keycloak
+
+- `OAUTH2_PROXY_COOKIE_SECRET` → généré avec :
+  ```bash
+  openssl rand -base64 32
+
 ---
 
 ## 🔐 Objectif

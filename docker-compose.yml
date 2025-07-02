@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   traefik:
     image: traefik:v3.0
@@ -49,7 +47,7 @@ services:
       - OAUTH2_PROXY_CLIENT_ID=portainer
       - OAUTH2_PROXY_CLIENT_SECRET=changeme
       - OAUTH2_PROXY_COOKIE_SECRET=${OAUTH2_PROXY_COOKIE_SECRET}
-      - OAUTH2_PROXY_REDIRECT_URL=https://${OAUTH2_PROXY_HOSTNAME}/oauth2/callback
+      - OAUTH2_PROXY_REDIRECT_URL=https://${OAUTH2_PROXY_HOSTNAME}.${DOMAIN}/oauth2/callback
       - OAUTH2_PROXY_UPSTREAMS=http://portainer:9000
       - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
       - OAUTH2_PROXY_EMAIL_DOMAINS=*
@@ -60,7 +58,7 @@ services:
       - traefik-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.oauth.rule=Host(`${OAUTH2_PROXY_HOSTNAME}`)"
+      - "traefik.http.routers.oauth.rule=Host(`${OAUTH2_PROXY_HOSTNAME}.${DOMAIN}`)"
       - "traefik.http.routers.oauth.entrypoints=websecure"
       - "traefik.http.routers.oauth.tls.certresolver=cloudflare"
       - "traefik.http.routers.oauth.middlewares=auth-stripprefix"
@@ -79,7 +77,7 @@ services:
       - traefik-net
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOSTNAME}`)"
+      - "traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOSTNAME}.${DOMAIN}`)"
       - "traefik.http.routers.portainer.entrypoints=websecure"
       - "traefik.http.routers.portainer.tls.certresolver=cloudflare"
       - "traefik.http.routers.portainer.middlewares=oauth2-auth"
@@ -92,4 +90,4 @@ volumes:
 
 networks:
   traefik-net:
-    driver: bridge
+    external: true
