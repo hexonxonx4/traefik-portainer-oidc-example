@@ -19,7 +19,7 @@ Ce guide t'explique comment créer un **client OIDC confidentiel** dans Keycloak
 2. Renseigne :
    - **Client ID** : `portainer`
    - **Client type** : `OpenID Connect`
-   - **Root URL** : `https://auth-proxy.homelab.local/oauth2/callback`
+   - **Root URL** : `https://auth-proxy.homelab.local`
 
 3. Clique **Next**
 
