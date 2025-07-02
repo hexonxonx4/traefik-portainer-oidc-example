@@ -20,7 +20,7 @@ Ce dépôt contient un exemple minimal de stack sécurisée avec :
 ### 1. Clone le dépôt
 
 ```bash
-git clone https://github.com/hexonxonx4/traefik-portainer-oidc-example.git
+git clone https://github.com/ton-utilisateur/traefik-portainer-oidc-example.git
 cd traefik-portainer-oidc-example
 ```
 
@@ -33,38 +33,59 @@ KEYCLOAK_CLIENT_ID=portainer
 KEYCLOAK_CLIENT_SECRET=colle-ton-secret-ici
 PORTAINER_HOSTNAME=portainer.homelab.local
 OAUTH2_PROXY_HOSTNAME=auth-proxy.homelab.local
+OAUTH2_PROXY_COOKIE_SECRET=w93NlUOzG7V2ZpbjmdCOc1f6Fup1N4cY2jAnz9ncuVc=
+LETSENCRYPT_EMAIL=ton@email.com
 ```
 
-Si tu utilises l’import automatique, tu n’as pas besoin de `KEYCLOAK_CLIENT_SECRET`.
+#### 🔑 Générer un `OAUTH2_PROXY_COOKIE_SECRET` valide :
+
+```bash
+openssl rand -base64 32
+```
+
+Le résultat doit être **exactement 32 bytes encodés en base64** (43 caractères).
 
 ---
 
 ## 🔁 Initialisation de Keycloak
 
-### 🔧 Option A — Manuelle (UI)
+Voir [`keycloak-init.md`](./keycloak-init.md) pour la configuration manuelle ou automatique via import JSON.
 
-Crée manuellement le client `portainer` dans Keycloak (voir `keycloak-init.md`).
+---
 
-### ⚡ Option B — Import JSON automatique
+## ⚠️ Limitations et pièges courants
 
-Un fichier de configuration (`keycloak-homelab-realm.json`) est fourni pour injecter automatiquement :
+### ❗Portainer — pas besoin de `--external-auth`
 
-- le realm `homelab`
-- le client OIDC `portainer`
-- un utilisateur admin `admin / changeme`
-
-Tu peux activer cela via ce volume dans le `docker-compose.yml` :
+Il suffit de démarrer avec :
 
 ```yaml
-volumes:
-  - ./keycloak-homelab-realm.json:/opt/keycloak/data/import/realm.json:ro
-command: >
-  start-dev --import-realm
+command:
+  - -H unix:///var/run/docker.sock
+```
+
+### ❗Traefik — domaine `.local` incompatible avec Let’s Encrypt
+
+Let’s Encrypt ne délivre pas de certificat pour `*.local`.
+
+**Solutions :**
+
+- Soit utiliser `tls=true` dans les routeurs sans certificat auto
+- Soit utiliser des certificats auto-signés (ex: `mkcert`)
+- Soit utiliser un domaine réel dans `/etc/hosts` (ex: `*.homelab.lan` ou `*.test`)
+
+### ❗oauth2-proxy : port non exposé
+
+Ajoute dans le service :
+
+```yaml
+expose:
+  - "4180"
 ```
 
 ---
 
-## 🔐 Accès
+## 📐 Accès
 
 - https://portainer.homelab.local → redirige vers Keycloak
 - https://auth-proxy.homelab.local/oauth2/callback → utilisé automatiquement par oauth2-proxy
