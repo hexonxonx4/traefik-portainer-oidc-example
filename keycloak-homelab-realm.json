@@ -1,0 +1,40 @@
+{
+  "realm": "homelab",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "portainer",
+      "name": "Portainer",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "REPLACE_ME",
+      "redirectUris": [
+        "https://auth-proxy.homelab.local/oauth2/callback"
+      ],
+      "webOrigins": [
+        "*"
+      ],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Homelab",
+      "email": "admin@homelab.local",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "changeme",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}

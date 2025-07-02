@@ -32,7 +32,9 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
-    command: start-dev
+    command: start-dev --import-realm
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak-homelab-realm.json:/opt/keycloak/data/import/realm.json:ro
     environment:
       - KEYCLOAK_ADMIN=admin
       - KEYCLOAK_ADMIN_PASSWORD=admin
@@ -58,6 +60,10 @@ services:
       - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
       - OAUTH2_PROXY_EMAIL_DOMAINS=*
       - OAUTH2_PROXY_SCOPE=openid email profile
+      - OAUTH2_PROXY_SET_XAUTHREQUEST=true
+      - OAUTH2_PROXY_PASS_AUTHORIZATION_HEADER=true
+      - OAUTH2_PROXY_SET_AUTHORIZATION_HEADER=true
+      - OAUTH2_PROXY_PASS_ACCESS_TOKEN=true
     networks:
       - traefik-net
     labels:
@@ -73,7 +79,10 @@ services:
 
   portainer:
     image: portainer/portainer-ce
-    command: -H unix:///var/run/docker.sock
+    command:
+      - --host=0.0.0.0
+      - --external-auth
+      - -H unix:///var/run/docker.sock
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
@@ -91,3 +100,4 @@ services:
 
 volumes:
   portainer_data:
+  keycloak_data:

@@ -1,77 +1,67 @@
 # 🎛️ Configuration de Keycloak pour l'exemple Portainer + Traefik + OAuth2-Proxy
 
-Ce guide t'explique comment créer un **client OIDC confidentiel** dans Keycloak (v22+), compatible avec `oauth2-proxy`.
+Ce guide t'explique deux façons de configurer un **client OIDC confidentiel** dans Keycloak, compatible avec `oauth2-proxy`.
 
 ---
 
-## 🧱 Pré-requis
+## 🧰 Option A : Interface Web (manuelle)
 
-- Un Realm existant (par défaut : `master`)
-- Un utilisateur (admin) connecté à l’interface Keycloak
-- Ton instance Keycloak accessible à `https://auth.homelab.local`
-
----
-
-## 🆕 Étapes pour créer un client confidentiel
-
-1. Dans la console d'administration, va à **Clients** > **Create client**
-
-2. Renseigne :
+1. Connecte-toi à Keycloak (ex: https://auth.homelab.local)
+2. Va à **Clients > Create client**
+3. Renseigne :
    - **Client ID** : `portainer`
    - **Client type** : `OpenID Connect`
-   - **Root URL** : `https://auth-proxy.homelab.local`
-
-3. Clique **Next**
-
----
-
-## ⚙️ Paramètres importants
-
-Dans l’étape suivante :
-
-- ✅ **Client authentication** : **Activé**
-    - Ce paramètre rend le client **confidential**
-- ❌ **Authorization** : Désactivé
-- ❌ **Service accounts** : Désactivé
-
-Puis clique **Save**
+   - **Root URL** : `https://portainer.homelab.local`
+4. Clique **Next**
+5. Active :
+   - ✅ **Client authentication**
+6. Dans **Redirect URIs**, ajoute :
+   ```
+   https://auth-proxy.homelab.local/oauth2/callback
+   ```
+7. Dans **Web Origins**, ajoute :
+   ```
+   *
+   ```
+8. Enregistre et récupère le **Client Secret** dans l'onglet Credentials
 
 ---
 
-## 📥 Configurer les URI de redirection
+## ⚡ Option B : Automatisée (import JSON)
 
-1. Dans l’onglet **Settings**, descends à la section **Access settings**
+Cette option permet de préconfigurer Keycloak automatiquement au démarrage.
 
-2. Ajoute dans **Valid redirect URIs** :
+### ✅ Prérequis
 
+- Le fichier [`keycloak-homelab-realm.json`](./keycloak-homelab-realm.json) doit exister
+- Le `docker-compose.yml` doit monter ce fichier comme volume :
+
+```yaml
+  keycloak:
+    ...
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./keycloak-homelab-realm.json:/opt/keycloak/data/import/realm.json:ro
+    command: >
+      start-dev --import-realm
 ```
-https://auth-proxy.homelab.local/oauth2/callback
-```
 
-3. Ajoute dans **Web origins** :
+### ✅ Ce que ça configure
 
-```
-*
-```
-
-Et sauvegarde.
+- Realm `homelab`
+- Client `portainer` (confidential)
+- Redirect URI : `https://auth-proxy.homelab.local/oauth2/callback`
+- Utilisateur admin : `admin / changeme`
 
 ---
 
-## 🔑 Récupérer le Client Secret
-
-1. Va dans l’onglet **Credentials**
-2. Copie la valeur du champ **Client secret**
-
----
-
-## ✅ Résumé pour `.env`
+## 📥 Variables à insérer dans `.env`
 
 ```env
 KEYCLOAK_CLIENT_ID=portainer
-KEYCLOAK_CLIENT_SECRET=colle-le-ici
+KEYCLOAK_CLIENT_SECRET=colle-le-ici (si mode manuel)
 ```
 
 ---
 
-Tu es maintenant prêt à utiliser Keycloak comme fournisseur OIDC pour sécuriser Portainer via `oauth2-proxy`.
+Utilise l'import JSON pour accélérer les tests locaux ou CI/CD. Pour une prod, vérifie les permissions et renforce les mots de passe.
