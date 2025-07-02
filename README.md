@@ -18,7 +18,7 @@ Ce dépôt contient un exemple **fonctionnel et sécurisé** pour déployer un s
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/tonuser/traefik-portainer-oidc-example.git
+git clone https://github.com/hexonxonx4/traefik-portainer-oidc-example.git
 cd traefik-portainer-oidc-example
 ```
 
