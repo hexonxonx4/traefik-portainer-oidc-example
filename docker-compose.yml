@@ -1,1 +1,93 @@
-# Ton docker-compose ici
+networks:
+  traefik-net:
+    driver: bridge
+
+services:
+
+  traefik:
+    image: traefik:v3.0
+    command:
+      - --api.dashboard=true
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.leresolver.acme.tlschallenge=true
+      - --certificatesresolvers.leresolver.acme.email=${EMAIL}
+      - --certificatesresolvers.leresolver.acme.storage=/letsencrypt/acme.json
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./acme:/letsencrypt
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`traefik.${TRAEFIK_DOMAIN}`)"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.tls.certresolver=leresolver"
+      - "traefik.http.routers.api.service=api@internal"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_HOSTNAME=${KEYCLOAK_HOSTNAME}
+      - KC_PROXY=edge
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.keycloak.rule=Host(`${KEYCLOAK_HOSTNAME}`)"
+      - "traefik.http.routers.keycloak.entrypoints=websecure"
+      - "traefik.http.routers.keycloak.tls.certresolver=leresolver"
+
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    environment:
+      - OAUTH2_PROXY_PROVIDER=keycloak-oidc
+      - OAUTH2_PROXY_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - OAUTH2_PROXY_CLIENT_SECRET=${KEYCLOAK_CLIENT_SECRET}
+      - OAUTH2_PROXY_COOKIE_SECRET=RANDOM_SECRET_BASE64_32_BYTES
+      - OAUTH2_PROXY_REDIRECT_URL=https://${OAUTH2_PROXY_HOSTNAME}/oauth2/callback
+      - OAUTH2_PROXY_UPSTREAMS=http://portainer:9000
+      - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
+      - OAUTH2_PROXY_EMAIL_DOMAINS=*
+      - OAUTH2_PROXY_SCOPE=openid email profile
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.oauth.rule=Host(`${PORTAINER_HOSTNAME}`)"
+      - "traefik.http.routers.oauth.entrypoints=websecure"
+      - "traefik.http.routers.oauth.tls.certresolver=leresolver"
+      - "traefik.http.routers.oauth.middlewares=auth-stripprefix"
+      - "traefik.http.middlewares.auth-stripprefix.stripprefix.prefixes=/oauth2"
+    depends_on:
+      - portainer
+      - keycloak
+
+  portainer:
+    image: portainer/portainer-ce
+    command: -H unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    networks:
+      - traefik-net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.portainer.rule=Host(`${PORTAINER_HOSTNAME}`)"
+      - "traefik.http.routers.portainer.entrypoints=websecure"
+      - "traefik.http.routers.portainer.tls.certresolver=leresolver"
+      - "traefik.http.routers.portainer.middlewares=oauth2-auth"
+      - "traefik.http.middlewares.oauth2-auth.forwardauth.address=http://oauth2-proxy:4180"
+      - "traefik.http.middlewares.oauth2-auth.forwardauth.trustforwardheader=true"
+      - "traefik.http.middlewares.oauth2-auth.forwardauth.authresponseheaders=X-Auth-Request-Email"
+
+volumes:
+  portainer_data:
