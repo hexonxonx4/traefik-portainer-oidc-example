@@ -1,0 +1,19 @@
+# Fichiers d'environnement sensibles
+.env
+*.env
+
+# Docker certs / ACME / volumes
+acme.json
+*.pem
+*.crt
+*.key
+
+# Logs
+*.log
+
+# Mac/Linux system files
+.DS_Store
+
+# Dossiers de volumes nommés (ex: portainer_data, traefik certs)
+volumes/
+data/
